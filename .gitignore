@@ -23,6 +23,7 @@ staticfiles/
 .env.local
 .env.development
 .env.production
+.venv/
 
 # IDE
 .idea/
