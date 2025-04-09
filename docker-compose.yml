@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+
+  redis:
+    image: redis:7
+    restart: always
+
+  web:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+    volumes:
+      - .:/app
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+
+  celery:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+    volumes:
+      - .:/app
+    command: celery -A config worker -l info
+
+volumes:
+  postgres_data:
