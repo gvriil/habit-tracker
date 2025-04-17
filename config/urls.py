@@ -20,6 +20,7 @@ from django.urls import path, include, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from .views import hello_world
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -35,6 +36,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path('', hello_world, name='hello_world'),  # корневой маршрут
     path('admin/', admin.site.urls),
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
