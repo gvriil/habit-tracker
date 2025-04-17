@@ -1,3 +1,4 @@
+
 name: CI/CD Pipeline
 
 on:
@@ -48,6 +49,19 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
+      - name: Fix tests directory structure
+        run: |
+          # Проверяем наличие __init__.py в директории тестов и удаляем его
+          if [ -f "users/tests/__init__.py" ]; then
+            rm users/tests/__init__.py
+            echo "Removed __init__.py from users/tests directory"
+          fi
+          # Также создаем пустой __init__.py в директории users, если его нет
+          if [ ! -f "users/__init__.py" ]; then
+            touch users/__init__.py
+            echo "Created __init__.py in users directory"
+          fi
+
       - name: Run tests
         env:
           SECRET_KEY: test-secret-key
@@ -60,7 +74,7 @@ jobs:
           CELERY_BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
         run: |
-          python manage.py test
+          python -m pytest users/ habits/ telegram_bot/
 
   deploy:
     needs: test
