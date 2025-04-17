@@ -43,6 +43,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set Python path
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+
       - name: Run tests
         env:
           SECRET_KEY: test-secret-key
