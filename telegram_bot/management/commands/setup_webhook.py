@@ -1,0 +1,1 @@
+WEBHOOK_URL = f"https://habbit-tracker.dev.botcraft.pro:42601/telegram-webhook/"
