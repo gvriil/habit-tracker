@@ -2,14 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop, ci-cd-setup ]
+    branches: [main, develop, ci-cd-setup]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:14
@@ -24,14 +23,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
       redis:
         image: redis:7
         ports:
           - 6379:6379
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -43,19 +40,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Verify bot code
+        run: |
+          python -c "from telegram_bot import *; print('Bot code successfully imported')"
+
       - name: Set Python path
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+          echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
 
       - name: Fix tests directory structure
         run: |
-          # Проверяем наличие __init__.py в директории тестов и удаляем его
           if [ -f "users/tests/__init__.py" ]; then
             rm users/tests/__init__.py
             echo "Removed __init__.py from users/tests directory"
           fi
-          # Также создаем пустой __init__.py в директории users, если его нет
           if [ ! -f "users/__init__.py" ]; then
             touch users/__init__.py
             echo "Created __init__.py in users directory"
@@ -75,10 +78,19 @@ jobs:
         run: |
           python -m pytest users/ habits/ telegram_bot/
 
-  deploy:
-    needs: test
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.event_name == 'push'
+  build:
     runs-on: ubuntu-latest
+    needs: test
+    if: ${{ success() && github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker images
+        run: docker-compose build
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.event_name == 'push' }}
     steps:
       - name: Deploy to server
         uses: appleboy/ssh-action@master

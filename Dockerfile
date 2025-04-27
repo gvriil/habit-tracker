@@ -1,5 +1,5 @@
 # Базовый образ для сборки
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -30,6 +30,9 @@ COPY . .
 # Создание непривилегированного пользователя
 RUN groupadd -r django && useradd -r -g django django && \
     chown -R django:django /app
+RUN mkdir -p /var/log/gunicorn/ && \
+    chown -R django:django /var/log/gunicorn/ && \
+    chmod -R 775 /var/log/gunicorn/
 USER django
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
