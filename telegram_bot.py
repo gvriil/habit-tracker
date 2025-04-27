@@ -255,7 +255,7 @@ def public_habits(update: Update, context: CallbackContext) -> None:
 
 def main() -> None:
     # Правильная загрузка токена из .env
-    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    token = os.getenv('TELEGRAM_TOKEN')
     if not token:
         print("ОШИБКА: Токен бота не найден в переменных окружения!")
         return

@@ -16,11 +16,16 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from .views import hello_world
+
+
+def health_check(request):
+    return HttpResponse("OK")
+
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -36,9 +41,11 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('', hello_world, name='hello_world'),  # корневой маршрут
     path('admin/', admin.site.urls),
+    path('', include('telegram_bot.urls')),  # Подключаем урлы приложения telegram_bot
     path('api/auth/', include('djoser.urls')),
+    path('health/', health_check, name='health'),
+
     path('api/auth/', include('djoser.urls.jwt')),
     path('api/telegram/', include('telegram_bot.urls')),
     path('api/', include('habits.urls')),

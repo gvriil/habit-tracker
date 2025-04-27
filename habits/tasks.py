@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Загрузка токена бота
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
 
 @shared_task
@@ -68,7 +68,7 @@ def send_habit_reminder(habit_id):
     try:
         # Получаем привычку из базы по ID для предотвращения ошибок сериализации
         habit = Habit.objects.get(id=habit_id)
-        bot = Bot(token=TELEGRAM_BOT_TOKEN)
+        bot = Bot(token=TELEGRAM_TOKEN)
 
         # Импортируем здесь для предотвращения циклического импорта
         from telegram_bot import user_data
@@ -216,7 +216,7 @@ def send_daily_statistics(user_id):
                 break
 
         if telegram_chat_id:
-            bot = Bot(token=TELEGRAM_BOT_TOKEN)
+            bot = Bot(token=TELEGRAM_TOKEN)
 
             message = f"📊 *Статистика за {yesterday.strftime('%d.%m.%Y')}*\n\n"
             message += f"Всего привычек: {total_habits}\n"

@@ -2,6 +2,7 @@ import json
 from functools import wraps
 
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from rest_framework import viewsets, permissions, status
@@ -11,6 +12,12 @@ from rest_framework.response import Response
 from telegram_bot.utils.logging import bot_logger
 from .models import TelegramState, NotificationLog
 from .serializers import TelegramStateSerializer, NotificationLogSerializer
+
+
+def index(request):
+    """Главная страница приложения с кнопкой для запуска бота."""
+    return render(request, 'telegram_bot/index.html')
+
 
 # Замена стандартного логгера на специализированный
 logger = bot_logger
@@ -46,7 +53,7 @@ def send_telegram_message(chat_id, text):
     from django.conf import settings
     import requests
 
-    bot_api_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
+    bot_api_url = f"https://api.telegram.org/bot{settings.TELEGRAM_TOKEN}"
 
     logger.debug(f"Отправка сообщения в Telegram: chat_id={chat_id}, text={text}")
 
@@ -183,7 +190,7 @@ def bot_debug_info(request):
 
     try:
         # Базовый URL для Telegram Bot API
-        bot_api_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
+        bot_api_url = f"https://api.telegram.org/bot{settings.TELEGRAM_TOKEN}"
 
         # Получение информации о вебхуке
         webhook_info = requests.get(f"{bot_api_url}/getWebhookInfo").json()

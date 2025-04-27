@@ -1,0 +1,13 @@
+[Unit]
+Description=Habit Tracker Gunicorn daemon
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/habit-tracker
+ExecStart=/var/www/habit-tracker/venv/bin/gunicorn --workers 3 --bind unix:/var/run/habit-tracker.sock config.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

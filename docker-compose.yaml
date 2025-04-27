@@ -5,17 +5,15 @@ services:
     image: postgres:14
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
     env_file:
       - ./.env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_DB=${DB_NAME}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    restart: always
 
   redis:
     image: redis:7
@@ -25,44 +23,32 @@ services:
     build: .
     restart: always
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - db
+      - redis
     env_file:
       - ./.env
     volumes:
+      - static_value:/app/static/
+      - media_value:/app/media/
       - .:/app
     command: >
       bash -c "python manage.py migrate &&
-               python manage.py runserver 0.0.0.0:8000"
+               python manage.py collectstatic --noinput &&
+               gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+
+  nginx:
+    image: nginx:1.21
     ports:
-      - "42601:8000"
-
-  celery:
-    build: .
-    restart: always
-    depends_on:
-      - db
-      - redis
-    env_file:
-      - ./.env
+      - "80:80"
     volumes:
-      - .:/app
-    command: celery -A config worker -l info
-
-  celery-beat:
-    build: .
-    restart: always
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_value:/var/html/static/
+      - media_value:/var/html/media/
     depends_on:
-      - db
-      - redis
-      - celery
-    env_file:
-      - ./.env
-    volumes:
-      - .:/app
-    command: celery -A config beat -l info
+      - web
+    restart: always
 
 volumes:
   postgres_data:
+  static_value:
+  media_value:
