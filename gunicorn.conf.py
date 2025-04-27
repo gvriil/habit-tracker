@@ -1,5 +1,8 @@
-bind = "127.0.0.1:8000"
-workers = 3
+import multiprocessing
+
+bind = "0.0.0.0:8000"
+workers = multiprocessing.cpu_count() * 2 + 1
 timeout = 120
-errorlog = "/var/log/gunicorn/error.log"
 accesslog = "/var/log/gunicorn/access.log"
+errorlog = "/var/log/gunicorn/error.log"
+capture_output = True
