@@ -45,26 +45,47 @@ class TelegramIntegrationTests(TestCase):
         self.assertIn(self.habit.action, reminder_text)
         self.assertIn(str(self.habit.estimated_duration), reminder_text)
 
-    # Правильно настраиваем патчи для send_habit_reminder теста
     @mock.patch('habits.tasks.Bot')
     def test_send_habit_reminder(self, mock_bot):
         """Тест отправки напоминания через Telegram"""
+        # Создаем мок объект, который будет имитировать модуль user_data
+        mock_user_data = mock.MagicMock()
+        mock_user_data.users = {123456789: {'user_id': self.user.id}}
+
+        with mock.patch('habits.tasks.user_data', mock_user_data):
+            habit = Habit.objects.create(
+                user=self.user,
+                title='Test Reminder Habit',
+                action='Remind me',
+                place='Anywhere',
+                time=timezone.now().time(),
+                periodicity=1
+            )
+
+            send_habit_reminder(habit.id)
+
+            mock_bot.return_value.send_message.assert_called_once()
+
+    # Правильно настраиваем патчи для send_habit_reminder теста
+   # @mock.patch('habits.tasks.Bot')
+   # def test_send_habit_reminder(self, mock_bot):
+   #     """Тест отправки напоминания через Telegram"""
         # Создаем мок словаря для имитации telegram_bot.user_data
-        test_user_data = {123456789: {'user_id': self.user.id}}
+   #     test_user_data = {123456789: {'user_id': self.user.id}}
 
         # Правильно патчим именно тот модуль, где используется user_data
-        with mock.patch.dict('telegram_bot.user_data', test_user_data, clear=True):
+   #     with mock.patch.dict('telegram_bot.user_data', test_user_data, clear=True):
             # Настраиваем мок для бота
-            mock_bot_instance = mock_bot.return_value
-            mock_send_message = mock_bot_instance.send_message
+   #         mock_bot_instance = mock_bot.return_value
+   #         mock_send_message = mock_bot_instance.send_message
 
             # Мокаем необходимый код внутри tasks
-            with mock.patch('habits.tasks.get_chat_id_by_user', return_value='123456789'):
+  #          with mock.patch('habits.tasks.get_chat_id_by_user', return_value='123456789'):
                 # Вызываем функцию отправки напоминания
-                send_habit_reminder(self.habit.id)
+ #               send_habit_reminder(self.habit.id)
 
                 # Проверяем, что метод send_message был вызван
-                mock_send_message.assert_called_once()
+#                mock_send_message.assert_called_once()
 
     @mock.patch('habits.tasks.send_habit_reminder')
     def test_schedule_reminder(self, mock_send_reminder):
