@@ -63,6 +63,19 @@ jobs:
             touch users/__init__.py
             echo "Created __init__.py in users directory"
           fi
+      - name: Wait for PostgreSQL
+        run: sleep 5
+      - name: Apply migrations
+        env:
+          SECRET_KEY: test-secret-key
+          DEBUG: True
+          DB_NAME: habit_tracker
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST: localhst
+          DB_PORT: 5432
+        run: |
+          python manage.py migrate --noinput
 
       - name: Run tests
         env:
@@ -76,6 +89,7 @@ jobs:
           CELERY_BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
         run: |
+          python manage.py makemigrations
           python -m pytest users/ habits/ telegram_bot/
 
   build:
