@@ -101,7 +101,9 @@ async def remind_later(callback: types.CallbackQuery):
     habit_info = await get_habit_details(habit_id)
 
     # В реальном приложении здесь должна быть логика отложенного напоминания
-    reminder_time = callback.message.date.replace(minute=callback.message.date.minute + 30)
+    reminder_time = callback.message.date.replace(
+        minute=callback.message.date.minute + 30
+    )
     await callback.message.edit_text(
         f"⏰ Я напомню вам о привычке \"{habit_info['name']}\" через 30 минут.\n\n"
         f"Уведомление придет в {reminder_time.strftime('%H:%M')}."

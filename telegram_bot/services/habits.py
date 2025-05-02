@@ -27,8 +27,6 @@ def get_user_habits(telegram_id):
             logger.warning(f"Пользователь с Telegram ID {telegram_id} не найден")
             return []
 
-
-
         # Получаем привычки с базовой информацией
         habits = Habit.objects.filter(user=user).order_by("-created_at")
 

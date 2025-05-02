@@ -2,6 +2,7 @@ import logging
 
 from django.apps import apps
 from asgiref.sync import sync_to_async
+
 # Настройка логгера
 logger = logging.getLogger(__name__)
 
@@ -27,9 +28,11 @@ def check_achievements(user, habit, streak):
                 "badge_emoji": "🌱",
             },
         )
-        if (created or not UserAchievement.objects.filter(
+        if (
+            created
+            or not UserAchievement.objects.filter(
                 user=user, achievement=achievement
-        ).exists()
+            ).exists()
         ):
             UserAchievement.objects.create(user=user, achievement=achievement)
             achievement_data = {
@@ -49,7 +52,7 @@ def check_achievements(user, habit, streak):
             },
         )
         if not UserAchievement.objects.filter(
-                user=user, achievement=achievement, habit=habit
+            user=user, achievement=achievement, habit=habit
         ).exists():
             UserAchievement.objects.create(
                 user=user, achievement=achievement, habit=habit
@@ -71,7 +74,7 @@ def check_achievements(user, habit, streak):
             },
         )
         if not UserAchievement.objects.filter(
-                user=user, achievement=achievement, habit=habit
+            user=user, achievement=achievement, habit=habit
         ).exists():
             UserAchievement.objects.create(
                 user=user, achievement=achievement, habit=habit

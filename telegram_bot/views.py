@@ -114,8 +114,10 @@ def telegram_webhook_view(request):
 
                 # Обработка команды /start
                 if text.startswith("/start"):
-                    welcome_text = ("Привет! Я бот Habit Tracker. Чтобы связать аккаунт, "
-                                    "используйте команду /connect <токен>")
+                    welcome_text = (
+                        "Привет! Я бот Habit Tracker. Чтобы связать аккаунт, "
+                        "используйте команду /connect <токен>"
+                    )
                     send_telegram_message(chat_id, welcome_text)
 
                 # Обработка команды /connect для привязки аккаунта

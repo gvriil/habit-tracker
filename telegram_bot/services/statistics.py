@@ -154,9 +154,8 @@ def get_weekly_report(telegram_id):
         # Расчет разницы в процентах
         if completions_prev_week > 0:
             change_percent = (
-                                     (
-                                             completions_this_week - completions_prev_week) / completions_prev_week
-                             ) * 100
+                (completions_this_week - completions_prev_week) / completions_prev_week
+            ) * 100
         else:
             change_percent = 100 if completions_this_week > 0 else 0
 

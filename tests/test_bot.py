@@ -333,7 +333,7 @@ async def test_stats_get_user_statistics():
 
     # Мокаем все функции, обращающиеся к БД
     with patch(
-            "telegram_bot.services.habits.get_user_habits", new_callable=AsyncMock
+        "telegram_bot.services.habits.get_user_habits", new_callable=AsyncMock
     ) as mock_habits, patch(
         "telegram_bot.services.statistics.get_habit_completion_stats",
         new_callable=AsyncMock,
