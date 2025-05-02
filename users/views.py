@@ -8,6 +8,7 @@ from rest_framework.authtoken.models import Token
 
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet для управления пользователями."""
+
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -18,27 +19,26 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.filter(id=self.request.user.id)
 
     def get_serializer_class(self):
-        if self.action in ['update', 'partial_update']:
+        if self.action in ["update", "partial_update"]:
             return UserUpdateSerializer
         return UserSerializer
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def me(self, request):
         """Получить данные текущего пользователя."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=["post"])
     def connect_telegram(self, request):
         """Привязать Telegram аккаунт."""
         user = request.user
-        telegram_id = request.data.get('telegram_id')
-        telegram_username = request.data.get('telegram_username')
+        telegram_id = request.data.get("telegram_id")
+        telegram_username = request.data.get("telegram_username")
 
         if not telegram_id:
             return Response(
-                {"error": "Telegram ID обязателен"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Telegram ID обязателен"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         user.telegram_id = telegram_id
@@ -58,7 +58,4 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            "user": serializer.data,
-            "token": token.key
-        })
+        return Response({"user": serializer.data, "token": token.key})

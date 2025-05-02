@@ -13,11 +13,11 @@ async def show_statistics(message: types.Message):
     """Показывает статистику привычек пользователя"""
     stats = await get_user_statistics(message.from_user.id)
 
-    if not stats or stats.get('total_habits', 0) == 0:
+    if not stats or stats.get("total_habits", 0) == 0:
         await message.answer(
             "<b>📊 У вас пока нет статистики</b>\n\n"
             "Создайте привычки и начните их отмечать, чтобы увидеть данные о вашем прогрессе.",
-            reply_markup=get_main_keyboard()
+            reply_markup=get_main_keyboard(),
         )
         return
 
@@ -30,12 +30,14 @@ async def show_statistics(message: types.Message):
     )
 
     # Добавляем информацию о лучшей привычке
-    if stats.get('best_habit'):
+    if stats.get("best_habit"):
         stats_text += f"<b>🏆 Лучшая привычка:</b> {stats['best_habit']['name']}\n"
-        stats_text += f"<b>Текущая серия:</b> {format_streak(stats['best_habit']['streak'])}\n\n"
+        stats_text += (
+            f"<b>Текущая серия:</b> {format_streak(stats['best_habit']['streak'])}\n\n"
+        )
 
     # Добавляем информацию о привычке, требующей внимания
-    if stats.get('worst_habit'):
+    if stats.get("worst_habit"):
         stats_text += f"<b>⚠️ Требует внимания:</b> {stats['worst_habit']['name']}\n"
 
     await message.answer(stats_text, reply_markup=get_main_keyboard())

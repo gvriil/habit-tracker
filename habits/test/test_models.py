@@ -4,8 +4,12 @@ from django.test import TestCase
 from django.utils import timezone
 
 from habits.models import Habit, HabitCompletion
-from habits.validators import validate_related_habit, validate_reward, validate_duration, \
-    validate_periodicity
+from habits.validators import (
+    validate_related_habit,
+    validate_reward,
+    validate_duration,
+    validate_periodicity,
+)
 
 User = get_user_model()
 
@@ -14,28 +18,28 @@ class HabitModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Создание пользователя для тестов
-        cls.user = User.objects.create_user(username='testuser', password='12345')
+        cls.user = User.objects.create_user(username="testuser", password="12345")
 
         # Создание привычки
         cls.habit = Habit.objects.create(
             user=cls.user,
-            name='Тестовая привычка',
-            place='Дом',
-            action='Делать отжимания',
+            name="Тестовая привычка",
+            place="Дом",
+            action="Делать отжимания",
             is_pleasant=False,
             periodicity=1,
             estimated_duration=2,
             is_public=True,
-            time_to_complete='09:00'
+            time_to_complete="09:00",
         )
 
     def test_habit_creation(self):
         """Тест создания привычки"""
-        self.assertEqual(str(self.habit), 'Тестовая привычка (testuser)')
+        self.assertEqual(str(self.habit), "Тестовая привычка (testuser)")
 
     def test_habit_str_method(self):
         """Тест строкового представления привычки"""
-        self.assertEqual(str(self.habit), f'Тестовая привычка (testuser)')
+        self.assertEqual(str(self.habit), f"Тестовая привычка (testuser)")
 
     def test_duration_validator(self):
         """Тест валидатора продолжительности"""
@@ -47,37 +51,41 @@ class HabitModelTest(TestCase):
             validate_duration(1)
             validate_duration(120)
         except ValidationError:
-            self.fail("validate_duration вызвал ValidationError для допустимого значения")
+            self.fail(
+                "validate_duration вызвал ValidationError для допустимого значения"
+            )
 
     def test_related_habit_validator(self):
         """Тест валидатора связанных привычек"""
         pleasant_habit = Habit.objects.create(
             user=self.user,
-            name='Приятная привычка',
-            place='Дом',
-            action='Слушать музыку',
+            name="Приятная привычка",
+            place="Дом",
+            action="Слушать музыку",
             is_pleasant=True,
             periodicity=1,
             estimated_duration=5,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
 
         non_pleasant_habit = Habit.objects.create(
             user=self.user,
-            name='Неприятная привычка',
-            place='Дом',
-            action='Мыть посуду',
+            name="Неприятная привычка",
+            place="Дом",
+            action="Мыть посуду",
             is_pleasant=False,
             periodicity=1,
             estimated_duration=5,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
 
         # Проверка валидации связанной привычки
         try:
             validate_related_habit(pleasant_habit, None)
         except ValidationError:
-            self.fail("validate_related_habit вызвал ошибку для приятной привычки без награды")
+            self.fail(
+                "validate_related_habit вызвал ошибку для приятной привычки без награды"
+            )
 
         # Нельзя связать с неприятной привычкой
         with self.assertRaises(ValidationError):
@@ -88,13 +96,13 @@ class HabitModelTest(TestCase):
         # Проверка на наличие и связанной привычки, и награды одновременно
         pleasant_habit = Habit.objects.create(
             user=self.user,
-            name='Приятная привычка',
-            place='Дом',
-            action='Смотреть сериал',
+            name="Приятная привычка",
+            place="Дом",
+            action="Смотреть сериал",
             is_pleasant=True,
             periodicity=1,
             estimated_duration=5,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
 
         with self.assertRaises(ValidationError):
@@ -112,10 +120,10 @@ class HabitModelTest(TestCase):
         """Тест значений по умолчанию"""
         habit = Habit.objects.create(
             user=self.user,
-            name='Минимальная привычка',
-            place='Дом',
-            action='Делать минимум',
-            time_to_complete='12:00'
+            name="Минимальная привычка",
+            place="Дом",
+            action="Делать минимум",
+            time_to_complete="12:00",
         )
         self.assertFalse(habit.is_pleasant)
         self.assertEqual(habit.periodicity, 1)  # По умолчанию 1 день
@@ -126,10 +134,10 @@ class HabitModelTest(TestCase):
         # Проверим другие поля, которые точно должны проходить валидацию
         habit = Habit(
             user=self.user,
-            name='Валидная привычка',
-            place='Дом',
-            action='Тест',
-            time_to_complete='10:00'
+            name="Валидная привычка",
+            place="Дом",
+            action="Тест",
+            time_to_complete="10:00",
         )
         try:
             habit.full_clean()
@@ -151,11 +159,11 @@ class HabitModelTest(TestCase):
         # Тест с максимально допустимой продолжительностью
         habit = Habit(
             user=self.user,
-            name='Тест',
-            place='Дом',
-            action='Тест сохранения',
+            name="Тест",
+            place="Дом",
+            action="Тест сохранения",
             estimated_duration=120,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
         habit.save()
         self.assertEqual(habit.estimated_duration, 120)
@@ -165,12 +173,12 @@ class HabitModelTest(TestCase):
         with self.assertRaises(ValidationError):
             habit = Habit(
                 user=self.user,
-                name='Ошибочная привычка',
-                place='Дом',
-                action='Тест',
+                name="Ошибочная привычка",
+                place="Дом",
+                action="Тест",
                 is_pleasant=True,
                 reward="Награда",  # Не должно быть награды у приятной привычки
-                time_to_complete='10:00'
+                time_to_complete="10:00",
             )
             habit.full_clean()
 
@@ -178,20 +186,20 @@ class HabitModelTest(TestCase):
         """Тест привычки со связанной приятной привычкой"""
         pleasant_habit = Habit.objects.create(
             user=self.user,
-            name='Приятная привычка',
-            place='Дом',
-            action='Смотреть фильм',
+            name="Приятная привычка",
+            place="Дом",
+            action="Смотреть фильм",
             is_pleasant=True,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
 
         habit_with_related = Habit(
             user=self.user,
-            name='Привычка со связанной',
-            place='Дом',
-            action='Делать что-то',
+            name="Привычка со связанной",
+            place="Дом",
+            action="Делать что-то",
             related_habit=pleasant_habit,
-            time_to_complete='11:00'
+            time_to_complete="11:00",
         )
 
         try:
@@ -206,23 +214,21 @@ class HabitCompletionTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Создание пользователя и привычки
-        cls.user = User.objects.create_user(username='testuser', password='12345')
+        cls.user = User.objects.create_user(username="testuser", password="12345")
         cls.habit = Habit.objects.create(
             user=cls.user,
-            name='Тестовая привычка',
-            place='Дом',
-            action='Отжимания',
+            name="Тестовая привычка",
+            place="Дом",
+            action="Отжимания",
             periodicity=1,
             estimated_duration=5,
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
 
     def test_habit_completion_creation(self):
         """Тест создания записи о выполнении привычки"""
         completion = HabitCompletion.objects.create(
-            habit=self.habit,
-            user=self.habit.user,
-            completed_at=timezone.now()
+            habit=self.habit, user=self.habit.user, completed_at=timezone.now()
         )
 
         self.assertEqual(completion.habit, self.habit)
@@ -231,9 +237,7 @@ class HabitCompletionTest(TestCase):
     def test_habit_completion_str_method(self):
         """Тест строкового представления выполнения привычки"""
         completion = HabitCompletion.objects.create(
-            habit=self.habit,
-            user=self.habit.user,
-            completed_at=timezone.now()
+            habit=self.habit, user=self.habit.user, completed_at=timezone.now()
         )
         expected_str = f"{self.habit.name} ({completion.completed_at})"
         self.assertEqual(str(completion), expected_str)
@@ -246,7 +250,7 @@ class HabitCompletionTest(TestCase):
             user=self.habit.user,
             completed_at=timezone.now(),
             notes=notes,
-            is_successful=False
+            is_successful=False,
         )
 
         self.assertEqual(completion.notes, notes)
@@ -255,9 +259,7 @@ class HabitCompletionTest(TestCase):
     def test_habit_completion_default_values(self):
         """Тест значений по умолчанию для выполнения привычки"""
         completion = HabitCompletion(
-            habit=self.habit,
-            user=self.habit.user,
-            completed_at=timezone.now()
+            habit=self.habit, user=self.habit.user, completed_at=timezone.now()
         )
         completion.save()
 
@@ -268,11 +270,11 @@ class HabitCompletionTest(TestCase):
         """Тест ограничения продолжительности привычки"""
         habit = Habit.objects.create(
             user=self.user,
-            name='Привычка с макс. продолжительностью',
-            place='Дом',
-            action='Долгое действие',
+            name="Привычка с макс. продолжительностью",
+            place="Дом",
+            action="Долгое действие",
             estimated_duration=120,  # Максимальное значение
-            time_to_complete='10:00'
+            time_to_complete="10:00",
         )
         self.assertEqual(habit.estimated_duration, 120)
 

@@ -16,7 +16,7 @@ from .serializers import TelegramStateSerializer, NotificationLogSerializer
 
 def index(request):
     """Главная страница приложения с кнопкой для запуска бота."""
-    return render(request, 'telegram_bot/index.html')
+    return render(request, "telegram_bot/index.html")
 
 
 # Замена стандартного логгера на специализированный
@@ -35,7 +35,9 @@ def debug_request(view_func):
         if request.body:
             try:
                 body = json.loads(request.body)
-                logger.debug(f"Тело запроса: {json.dumps(body, ensure_ascii=False, indent=2)}")
+                logger.debug(
+                    f"Тело запроса: {json.dumps(body, ensure_ascii=False, indent=2)}"
+                )
             except:
                 logger.debug(f"Тело запроса (raw): {request.body[:500]}")
 
@@ -59,15 +61,16 @@ def send_telegram_message(chat_id, text):
 
     try:
         response = requests.post(
-            f"{bot_api_url}/sendMessage",
-            json={"chat_id": chat_id, "text": text}
+            f"{bot_api_url}/sendMessage", json={"chat_id": chat_id, "text": text}
         )
 
         if response.status_code == 200:
             logger.debug(f"Сообщение успешно отправлено: {response.json()}")
             return True
         else:
-            logger.error(f"Ошибка отправки сообщения: {response.status_code}, {response.text}")
+            logger.error(
+                f"Ошибка отправки сообщения: {response.status_code}, {response.text}"
+            )
             return False
 
     except Exception as e:
@@ -86,36 +89,37 @@ def telegram_webhook_view(request):
     URL: /telegram-webhook/
     """
     bot_logger.info("=== ПОЛУЧЕН ЗАПРОС ОТ TELEGRAM ===")
-    body = request.body.decode('utf-8')
+    body = request.body.decode("utf-8")
     bot_logger.info(f"Тело запроса: {body}")
-    logger.info("Получен запрос от Telegram: %s", request.body.decode('utf-8'))
+    logger.info("Получен запрос от Telegram: %s", request.body.decode("utf-8"))
 
     try:
         data = json.loads(request.body)
 
         # Логируем детали запроса для отладки
-        message = data.get('message', {})
-        chat_id = message.get('chat', {}).get('id')
-        text = message.get('text', '')
+        message = data.get("message", {})
+        chat_id = message.get("chat", {}).get("id")
+        text = message.get("text", "")
 
         logger.info(f"Получено сообщение: chat_id={chat_id}, text={text}")
 
         # Проверяем тип сообщения
-        if 'message' in data:
-            message = data['message']
-            chat_id = message['chat']['id']
+        if "message" in data:
+            message = data["message"]
+            chat_id = message["chat"]["id"]
 
             # Обработка команд
-            if 'text' in message:
-                text = message['text']
+            if "text" in message:
+                text = message["text"]
 
                 # Обработка команды /start
-                if text.startswith('/start'):
-                    welcome_text = "Привет! Я бот Habit Tracker. Чтобы связать аккаунт, используйте команду /connect <токен>"
+                if text.startswith("/start"):
+                    welcome_text = ("Привет! Я бот Habit Tracker. Чтобы связать аккаунт, "
+                                    "используйте команду /connect <токен>")
                     send_telegram_message(chat_id, welcome_text)
 
                 # Обработка команды /connect для привязки аккаунта
-                elif text.startswith('/connect'):
+                elif text.startswith("/connect"):
                     try:
                         # Извлекаем токен
                         parts = text.split()
@@ -123,10 +127,13 @@ def telegram_webhook_view(request):
                             raise ValueError("Неверный формат команды")
 
                         token = parts[1]
-                        logger.debug(f"Попытка связать аккаунт с токеном: {token[:5]}...")
+                        logger.debug(
+                            f"Попытка связать аккаунт с токеном: {token[:5]}..."
+                        )
 
                         # Найти пользователя по токену и связать его с chat_id
                         from users.models import User
+
                         user = User.objects.filter(auth_token=token).first()
 
                         if user:
@@ -134,41 +141,55 @@ def telegram_webhook_view(request):
                             user.telegram_notifications = True
                             user.save()
                             logger.debug(
-                                f"Аккаунт пользователя {user.id} связан с Telegram ID {chat_id}")
+                                f"Аккаунт пользователя {user.id} связан с Telegram ID {chat_id}"
+                            )
 
-                            send_telegram_message(chat_id,
-                                                  f"Аккаунт успешно связан с Telegram! Теперь вы будете получать уведомления.")
+                            send_telegram_message(
+                                chat_id,
+                                f"Аккаунт успешно связан с Telegram! Теперь вы будете получать"
+                                f" уведомления.",
+                            )
                         else:
                             logger.warning(f"Токен не найден: {token[:5]}...")
-                            send_telegram_message(chat_id,
-                                                  "Токен не найден. Пожалуйста, проверьте токен и попробуйте снова.")
+                            send_telegram_message(
+                                chat_id,
+                                "Токен не найден. Пожалуйста, проверьте токен и попробуйте"
+                                " снова.",
+                            )
                     except Exception as e:
                         logger.error(f"Ошибка при обработке команды connect: {str(e)}")
-                        send_telegram_message(chat_id,
-                                              "Произошла ошибка при связывании аккаунта. Пожалуйста, попробуйте ��озже.")
+                        send_telegram_message(
+                            chat_id,
+                            "Произошла ошибка при связывании аккаунта. Пожалуйста, попробуйте"
+                            " ��озже.",
+                        )
 
                 # Добавляем отладочную команду
-                elif text.startswith('/debug'):
+                elif text.startswith("/debug"):
                     # Отправляем отладочную информацию
                     from django.conf import settings
-                    debug_info = f"Отладочная информация:\n"
+
+                    debug_info = "Отладочная информация:\n"
                     debug_info += f"- Telegram ID: {chat_id}\n"
                     debug_info += f"- Webhook URL: {settings.TELEGRAM_WEBHOOK_URL}\n"
 
                     # Проверка связанного аккаунта
                     from users.models import User
+
                     user = User.objects.filter(telegram_id=chat_id).first()
                     if user:
                         debug_info += f"- Связан с аккаунтом: {user.username}\n"
                     else:
-                        debug_info += f"- Аккаунт не связан\n"
+                        debug_info += "- Аккаунт не связан\n"
 
                     send_telegram_message(chat_id, debug_info)
 
                 # Другие команды или сообщения
                 else:
-                    send_telegram_message(chat_id,
-                                          "Я не понимаю эту команду. Доступные команды: /start, /connect <токен>, /debug")
+                    send_telegram_message(
+                        chat_id,
+                        "Я не понимаю эту команду. Доступные команды: /start, /connect <токен>, /debug",
+                    )
 
         return JsonResponse({"ok": True})
 
@@ -177,7 +198,7 @@ def telegram_webhook_view(request):
         return JsonResponse({"ok": False, "error": str(e)})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([permissions.IsAdminUser])
 def bot_debug_info(request):
     """
@@ -203,6 +224,7 @@ def bot_debug_info(request):
 
         # Статистика пользователей с подключенным Telegram
         from users.models import User
+
         telegram_users = User.objects.exclude(telegram_id=None).count()
 
         debug_data = {
@@ -210,8 +232,8 @@ def bot_debug_info(request):
             "webhook_info": webhook_info,
             "message_stats": {
                 "total_messages": message_count,
-                "telegram_users": telegram_users
-            }
+                "telegram_users": telegram_users,
+            },
         }
 
         return Response(debug_data)
@@ -219,8 +241,7 @@ def bot_debug_info(request):
     except Exception as e:
         logger.error(f"Ошибка при получении дебаг-информации: {str(e)}")
         return Response(
-            {"error": f"Ошибка: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {"error": f"Ошибка: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
@@ -241,7 +262,7 @@ class NotificationLogViewSet(viewsets.ReadOnlyModelViewSet):
         return NotificationLog.objects.filter(user=self.request.user)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def send_test_notification(request):
     user = request.user
@@ -249,7 +270,7 @@ def send_test_notification(request):
     if not user.telegram_id or not user.telegram_notifications:
         return Response(
             {"error": "Необходимо подключить Telegram и включить уведомления"},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
@@ -260,10 +281,7 @@ def send_test_notification(request):
 
         # Логирование отправки
         NotificationLog.objects.create(
-            user=user,
-            habit=None,
-            message=message,
-            is_delivered=sent
+            user=user, habit=None, message=message, is_delivered=sent
         )
 
         if sent:
@@ -271,12 +289,12 @@ def send_test_notification(request):
         else:
             return Response(
                 {"error": "Ошибка отправки уведомления"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     except Exception as e:
         logger.error(f"Ошибка при отправке тестового уведомления: {str(e)}")
         return Response(
             {"error": f"Ошибка при отправке: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

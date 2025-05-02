@@ -1,0 +1,38 @@
+from unittest.mock import patch, MagicMock
+from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
+from habits.models import Habit
+from users.models import User
+from telegram_bot.models import TelegramState
+
+class TelegramIntegrationTests(TestCase):
+    def setUp(self):
+        # Создаем пользователя
+        self.user = User.objects.create_user(
+            email='test@example.com',
+            username='testuser',
+            password='testpassword'
+        )
+
+        # Создаем привычку
+        self.habit = Habit.objects.create(
+            user=self.user,
+            title='Test Habit',
+            time=timezone.now() + timedelta(hours=1),
+            place='Test Place',
+            action='Test Action',
+            is_pleasant=False,
+            periodicity=1,
+            reward='Test Reward',
+            time_required=5,
+            is_public=True
+        )
+
+        # Создаем мок для telegram_id
+        self.telegram_profile = MagicMock()
+        self.telegram_profile.chat_id = '123456789'
+
+    def test_format_habit_reminder(self):
+        # Мокируем функцию форматирования
+        reminder_text = fНапоминание:

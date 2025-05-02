@@ -1,13 +1,12 @@
+from aiogram import F
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from asgiref.sync import sync_to_async
 
 from telegram_bot.keyboards.keyboards import get_main_keyboard
 
 router = Router()
-
-from aiogram import F
-from aiogram.fsm.context import FSMContext
 
 
 @router.message(F.text == "⬅️ Назад")
@@ -37,7 +36,7 @@ async def cmd_start(message: types.Message):
         f"• Отслеживать серии выполнений\n"
         f"• Показывать статистику и достижения\n\n"
         f"Используйте кнопки меню или команду /help для справки.",
-        reply_markup=get_main_keyboard()
+        reply_markup=get_main_keyboard(),
     )
 
 
@@ -48,7 +47,8 @@ async def create_user_if_not_exists(user_id, username):
     def _create_user():
         from django.contrib.auth import get_user_model
         import logging
-        logger = logging.getLogger('django')
+
+        logger = logging.getLogger("django")
 
         User = get_user_model()
         if not User.objects.filter(id=user_id).exists():
@@ -57,7 +57,7 @@ async def create_user_if_not_exists(user_id, username):
                 user = User.objects.create(
                     id=user_id,
                     username=username[:150],  # Обрезаем, если слишком длинное
-                    is_active=True
+                    is_active=True,
                 )
                 logger.error(f"Создан новый пользователь: {user.id}")
                 return True
@@ -100,6 +100,7 @@ async def help_button(message: types.Message):
 async def habits_button(message: types.Message):
     """Обработка нажатия кнопки списка привычек"""
     from telegram_bot.handlers.habits import show_habits_list
+
     await show_habits_list(message)
 
 
@@ -107,6 +108,7 @@ async def habits_button(message: types.Message):
 async def new_habit_button(message: types.Message, state: FSMContext):
     """Обработка нажатия кнопки создания привычки"""
     from telegram_bot.handlers.habits import create_new_habit
+
     await create_new_habit(message, state)
 
 
@@ -114,6 +116,7 @@ async def new_habit_button(message: types.Message, state: FSMContext):
 async def stats_button(message: types.Message):
     """Обработка нажатия кнопки статистики"""
     from telegram_bot.handlers.statistics import show_statistics
+
     await show_statistics(message)
 
 
@@ -121,4 +124,5 @@ async def stats_button(message: types.Message):
 async def achievements_button(message: types.Message):
     """Обработка нажатия кнопки достижений"""
     from telegram_bot.handlers.statistics import show_achievements
+
     await show_achievements(message)

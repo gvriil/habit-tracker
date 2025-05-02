@@ -1,6 +1,14 @@
 from aiogram import Router, types, F
-from telegram_bot.services import mark_habit_completed, mark_habit_skipped, get_habit_details
-from telegram_bot.keyboards.keyboards import get_main_keyboard, get_habit_detail_keyboard
+
+from telegram_bot.keyboards.keyboards import (
+    get_main_keyboard,
+    get_habit_detail_keyboard,
+)
+from telegram_bot.services import (
+    mark_habit_completed,
+    mark_habit_skipped,
+    get_habit_details,
+)
 from telegram_bot.utils.formatters import format_streak
 
 router = Router()
@@ -47,12 +55,17 @@ async def complete_habit(callback: types.CallbackQuery):
         await callback.message.edit_text(response_text)
 
         # Отправляем дополнительное сообщение с главной клавиатурой
-        await callback.message.answer("Что хотите сделать дальше?",
-                                      reply_markup=get_main_keyboard())
+        await callback.message.answer(
+            "Что хотите сделать дальше?", reply_markup=get_main_keyboard()
+        )
     else:
-        error_message = result.get('error', 'Неизвестная ошибка')
-        await callback.message.edit_text(f"❌ Не удалось отметить выполнение: {error_message}")
-        await callback.message.answer("Попробуйте еще раз позже.", reply_markup=get_main_keyboard())
+        error_message = result.get("error", "Неизвестная ошибка")
+        await callback.message.edit_text(
+            f"❌ Не удалось отметить выполнение: {error_message}"
+        )
+        await callback.message.answer(
+            "Попробуйте еще раз позже.", reply_markup=get_main_keyboard()
+        )
 
 
 @router.callback_query(F.data.startswith("skip_"))
@@ -68,12 +81,17 @@ async def skip_habit(callback: types.CallbackQuery):
             f"⏸ Привычка \"{habit_info['name']}\" пропущена на сегодня.\n\n"
             f"Не беспокойтесь, один пропуск не критичен. Возвращайтесь к ней завтра! 💪"
         )
-        await callback.message.answer("Что хотите сделать дальше?",
-                                      reply_markup=get_main_keyboard())
+        await callback.message.answer(
+            "Что хотите сделать дальше?", reply_markup=get_main_keyboard()
+        )
     else:
-        error_message = result.get('error', 'Неизвестная ошибка')
-        await callback.message.edit_text(f"❌ Не удалось отметить пропуск: {error_message}")
-        await callback.message.answer("Попробуйте еще раз позже.", reply_markup=get_main_keyboard())
+        error_message = result.get("error", "Неизвестная ошибка")
+        await callback.message.edit_text(
+            f"❌ Не удалось отметить пропуск: {error_message}"
+        )
+        await callback.message.answer(
+            "Попробуйте еще раз позже.", reply_markup=get_main_keyboard()
+        )
 
 
 @router.callback_query(F.data.startswith("remind_"))
@@ -83,11 +101,14 @@ async def remind_later(callback: types.CallbackQuery):
     habit_info = await get_habit_details(habit_id)
 
     # В реальном приложении здесь должна быть логика отложенного напоминания
+    reminder_time = callback.message.date.replace(minute=callback.message.date.minute + 30)
     await callback.message.edit_text(
         f"⏰ Я напомню вам о привычке \"{habit_info['name']}\" через 30 минут.\n\n"
-        f"Уведомление придет в {callback.message.date.replace(minute=callback.message.date.minute + 30).strftime('%H:%M')}."
+        f"Уведомление придет в {reminder_time.strftime('%H:%M')}."
     )
-    await callback.message.answer("Что хотите сделать дальше?", reply_markup=get_main_keyboard())
+    await callback.message.answer(
+        "Что хотите сделать дальше?", reply_markup=get_main_keyboard()
+    )
 
 
 @router.callback_query(F.data.startswith("habit_"))
@@ -100,7 +121,7 @@ async def show_habit_details(callback: types.CallbackQuery):
         await callback.message.edit_text("❌ Привычка не найдена")
         return
 
-    # Форматирование информации о привычке
+    # Форматирование информации о привычке (убран лишний отступ)
     habit_text = (
         f"<b>{habit_info['name']}</b>\n\n"
         f"🗂 <b>Категория:</b> {habit_info['category']}\n"
@@ -111,6 +132,5 @@ async def show_habit_details(callback: types.CallbackQuery):
     )
 
     await callback.message.edit_text(
-        habit_text,
-        reply_markup=get_habit_detail_keyboard(habit_id)
+        habit_text, reply_markup=get_habit_detail_keyboard(habit_id)
     )

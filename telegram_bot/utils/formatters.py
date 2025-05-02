@@ -17,19 +17,14 @@ def get_emoji_for_category(category: str) -> str:
         "sport": "💪",
         "study": "📚",
         "self": "🧠",
-        "other": "🔄"
+        "other": "🔄",
     }
     return emoji_map.get(category, "⚪")
 
 
 def get_emoji_for_frequency(frequency: str) -> str:
     """Возвращает эмодзи для частоты привычки"""
-    emoji_map = {
-        "daily": "🔄",
-        "weekdays": "📅",
-        "weekends": "🏖️",
-        "custom": "📆"
-    }
+    emoji_map = {"daily": "🔄", "weekdays": "📅", "weekends": "🏖️", "custom": "📆"}
     return emoji_map.get(frequency, "⚪")
 
 

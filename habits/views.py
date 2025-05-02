@@ -19,7 +19,9 @@ def get_habits_view(request):
     Возвращает список привычек пользователя в формате JSON.
     """
     client = APIClient()
-    response = client.make_request(user_id=request.user.id, method="get", endpoint="/habits/")
+    response = client.make_request(
+        user_id=request.user.id, method="get", endpoint="/habits/"
+    )
     habits = response.json()
     return JsonResponse(habits, safe=False)
 
@@ -40,11 +42,15 @@ def create_habit_view(request):
             "is_pleasant": request.POST.get("is_pleasant") == "true",
             "is_public": request.POST.get("is_public") == "true",
             "periodicity": int(request.POST.get("periodicity")),
-            "estimated_duration": int(request.POST.get("estimated_duration"))
+            "estimated_duration": int(request.POST.get("estimated_duration")),
         }
         client = APIClient()
-        response = client.make_request(user_id=request.user.id, method="post", endpoint="/habits/",
-                                       data=new_habit_data)
+        response = client.make_request(
+            user_id=request.user.id,
+            method="post",
+            endpoint="/habits/",
+            data=new_habit_data,
+        )
         return JsonResponse(response.json(), status=response.status_code)
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -71,13 +77,18 @@ class HabitViewSet(viewsets.ModelViewSet):
     destroy:
     Удаление привычки.
     """
+
     serializer_class = HabitSerializer
     permission_classes = [permissions.IsAuthenticated, IsPublicOrOwner]
     pagination_class = HabitPagination
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = ['is_pleasant', 'is_public', 'periodicity']
-    ordering_fields = ['created_at', 'name', 'periodicity']
-    search_fields = ['name', 'description', 'place', 'action']
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.OrderingFilter,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ["is_pleasant", "is_public", "periodicity"]
+    ordering_fields = ["created_at", "name", "periodicity"]
+    search_fields = ["name", "description", "place", "action"]
 
     def get_queryset(self):
         """
@@ -91,9 +102,9 @@ class HabitViewSet(viewsets.ModelViewSet):
         if self.request.method in permissions.SAFE_METHODS:
             return Habit.objects.filter(
                 Q(user=user) | Q(is_public=True)
-            ).select_related('user', 'related_habit')
+            ).select_related("user", "related_habit")
         # Для операций изменения - видит только свои привычки
-        return Habit.objects.filter(user=user).select_related('user', 'related_habit')
+        return Habit.objects.filter(user=user).select_related("user", "related_habit")
 
     def perform_create(self, serializer):
         """
@@ -101,7 +112,7 @@ class HabitViewSet(viewsets.ModelViewSet):
         """
         serializer.save(user=self.request.user)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):
         """
         Отметить привычку как выполненную.
@@ -111,20 +122,24 @@ class HabitViewSet(viewsets.ModelViewSet):
         habit = self.get_object()
 
         # IsOwner в permission_classes уже проверяет владельца
-        serializer = HabitCompletionSerializer(data=request.data, context={'request': request})
+        serializer = HabitCompletionSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save(habit=habit)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def my_habits(self, request):
         """
         Получить только свои привычки с пагинацией.
 
         Возвращает отфильтрованный список привычек, принадлежащих текущему пользователю.
         """
-        habits = Habit.objects.filter(user=request.user).select_related('user', 'related_habit')
+        habits = Habit.objects.filter(user=request.user).select_related(
+            "user", "related_habit"
+        )
 
         # Применяем фильтры
         for backend in list(self.filter_backends):
@@ -159,12 +174,13 @@ class HabitCompletionViewSet(viewsets.ModelViewSet):
     destroy:
     Удаление записи о выполнении привычки.
     """
+
     serializer_class = HabitCompletionSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = HabitPagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['completion_date']
-    ordering_fields = ['completion_date']
+    filterset_fields = ["completion_date"]
+    ordering_fields = ["completion_date"]
 
     def get_queryset(self):
         """
@@ -172,7 +188,7 @@ class HabitCompletionViewSet(viewsets.ModelViewSet):
         """
         return HabitCompletion.objects.filter(
             habit__user=self.request.user
-        ).select_related('habit')
+        ).select_related("habit")
 
     def perform_create(self, serializer):
         """
@@ -180,12 +196,14 @@ class HabitCompletionViewSet(viewsets.ModelViewSet):
 
         Проверяет, что пользователь является владельцем привычки.
         """
-        habit = serializer.validated_data['habit']
+        habit = serializer.validated_data["habit"]
         if habit.user != self.request.user:
-            raise permissions.PermissionDenied("Вы можете отмечать только свои привычки")
+            raise permissions.PermissionDenied(
+                "Вы можете отмечать только свои привычки"
+            )
         serializer.save(user=self.request.user)  # Добавляем пользователя при сохранении
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def list_by_habit(self, request, habit_id=None):
         """
         Получение всех отметок о выполнении для определенной привычки.
@@ -211,16 +229,21 @@ class PublicHabitListView(generics.ListAPIView):
     фильтрации, сортировки и поиска. Доступно только аутентифицированным
     пользователям.
     """
+
     serializer_class = HabitSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = HabitPagination
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = ['is_pleasant', 'periodicity']
-    ordering_fields = ['created_at', 'name']
-    search_fields = ['name', 'description', 'place', 'action']
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.OrderingFilter,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ["is_pleasant", "periodicity"]
+    ordering_fields = ["created_at", "name"]
+    search_fields = ["name", "description", "place", "action"]
 
     def get_queryset(self):
         """
         Возвращает список всех публичных привычек.
         """
-        return Habit.objects.filter(is_public=True).select_related('user')
+        return Habit.objects.filter(is_public=True).select_related("user")

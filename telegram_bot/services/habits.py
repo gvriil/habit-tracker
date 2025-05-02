@@ -8,9 +8,9 @@ from django.apps import apps
 logger = logging.getLogger(__name__)
 
 # Импорт моделей
-User = apps.get_model('users', 'User')
-Habit = apps.get_model('habits', 'Habit')
-HabitCompletion = apps.get_model('habits', 'HabitCompletion')
+User = apps.get_model("users", "User")
+Habit = apps.get_model("habits", "Habit")
+HabitCompletion = apps.get_model("habits", "HabitCompletion")
 
 
 # Импорт функций для проверки достижений
@@ -27,11 +27,10 @@ def get_user_habits(telegram_id):
             logger.warning(f"Пользователь с Telegram ID {telegram_id} не найден")
             return []
 
-        # Текущая дата
-        today = datetime.now().date()
+
 
         # Получаем привычки с базовой информацией
-        habits = Habit.objects.filter(user=user).order_by('-created_at')
+        habits = Habit.objects.filter(user=user).order_by("-created_at")
 
         # Форматируем данные для ответа
         result = []
@@ -39,15 +38,17 @@ def get_user_habits(telegram_id):
             # Расчет серии (streak)
             streak = calculate_streak(habit)
 
-            result.append({
-                'id': habit.id,
-                'name': habit.name,
-                'category': habit.category,
-                'time_of_day': habit.time_of_day,
-                'frequency': habit.frequency,
-                'created_at': habit.created_at.strftime('%Y-%m-%d'),
-                'streak': streak,
-            })
+            result.append(
+                {
+                    "id": habit.id,
+                    "name": habit.name,
+                    "category": habit.category,
+                    "time_of_day": habit.time_of_day,
+                    "frequency": habit.frequency,
+                    "created_at": habit.created_at.strftime("%Y-%m-%d"),
+                    "streak": streak,
+                }
+            )
 
         return result
     except Exception as e:
@@ -72,7 +73,7 @@ def save_habit(user_id, name, category, time_of_day, frequency):
             name=name,
             category=category,
             time_of_day=time_of_day,
-            frequency=frequency
+            frequency=frequency,
         )
         return habit
     except Exception as e:
@@ -99,9 +100,7 @@ def mark_habit_completed(telegram_id, habit_id):
         # Создаем запись о выполнении
         today = datetime.now().date()
         completion, created = HabitCompletion.objects.get_or_create(
-            habit=habit,
-            date=today,
-            defaults={"status": "completed"}
+            habit=habit, date=today, defaults={"status": "completed"}
         )
 
         if not created:
@@ -113,13 +112,10 @@ def mark_habit_completed(telegram_id, habit_id):
 
         # Проверяем достижения (импортируем из achievements.py)
         from telegram_bot.services.achievements import check_achievements
+
         achievement = check_achievements(user, habit, streak)
 
-        return {
-            "success": True,
-            "streak": streak,
-            "achievement": achievement
-        }
+        return {"success": True, "streak": streak, "achievement": achievement}
 
     except Exception as e:
         logger.error(f"Ошибка при отметке привычки: {e}")
@@ -145,9 +141,7 @@ def mark_habit_skipped(telegram_id, habit_id):
         # Создаем запись о пропуске
         today = datetime.now().date()
         completion, created = HabitCompletion.objects.get_or_create(
-            habit=habit,
-            date=today,
-            defaults={"status": "skipped"}
+            habit=habit, date=today, defaults={"status": "skipped"}
         )
 
         if not created:
@@ -225,13 +219,13 @@ def get_habits_for_notification(current_time):
         weekday = current_time.weekday()
 
         # Определяем время дня для текущего часа
-        time_of_day = 'morning'
+        time_of_day = "morning"
         if 12 <= hour < 17:
-            time_of_day = 'day'
+            time_of_day = "day"
         elif 17 <= hour < 22:
-            time_of_day = 'evening'
+            time_of_day = "evening"
         elif hour >= 22 or hour < 5:
-            time_of_day = 'night'
+            time_of_day = "night"
 
         # Получаем привычки для текущего времени дня
         habits = Habit.objects.filter(time_of_day=time_of_day)
@@ -241,27 +235,28 @@ def get_habits_for_notification(current_time):
         for habit in habits:
             is_due = False
 
-            if habit.frequency == 'daily':
+            if habit.frequency == "daily":
                 is_due = True
-            elif habit.frequency == 'weekdays' and weekday < 5:  # Пн-Пт
+            elif habit.frequency == "weekdays" and weekday < 5:  # Пн-Пт
                 is_due = True
-            elif habit.frequency == 'weekends' and weekday >= 5:  # Сб-Вс
+            elif habit.frequency == "weekends" and weekday >= 5:  # Сб-Вс
                 is_due = True
-            elif habit.frequency == 'custom' and habit.custom_days:
-                custom_days = [int(d) for d in habit.custom_days.split(',')]
+            elif habit.frequency == "custom" and habit.custom_days:
+                custom_days = [int(d) for d in habit.custom_days.split(",")]
                 is_due = weekday in custom_days
 
             if is_due:
                 # Проверяем, не отмечена ли привычка уже сегодня
                 if not HabitCompletion.objects.filter(
-                        habit=habit,
-                        date=current_time.date()
+                    habit=habit, date=current_time.date()
                 ).exists():
-                    result.append({
-                        'user_id': habit.user.telegram_id,
-                        'habit_id': habit.id,
-                        'name': habit.name
-                    })
+                    result.append(
+                        {
+                            "user_id": habit.user.telegram_id,
+                            "habit_id": habit.id,
+                            "name": habit.name,
+                        }
+                    )
 
         return result
 
@@ -274,9 +269,10 @@ def calculate_streak(habit):
     """Функция для расчета текущей серии выполнений привычки."""
     today = datetime.now().date()
     completions = HabitCompletion.objects.filter(
-        habit=habit,
-        status='completed'
-    ).order_by('-date')[:30]  # Берем последние 30 выполнений
+        habit=habit, status="completed"
+    ).order_by("-date")[
+        :30
+    ]  # Берем последние 30 выполнений
 
     streak = 0
     last_date = today + timedelta(days=1)  # Начинаем с "завтра"
@@ -284,7 +280,8 @@ def calculate_streak(habit):
     for comp in completions:
         # Если дата следующая за последней или это первая итерация и сегодняшнее выполнение
         if ((last_date - comp.date).days == 1) or (
-                last_date > today and comp.date == today):
+            last_date > today and comp.date == today
+        ):
             streak += 1
             last_date = comp.date
         else:
@@ -302,15 +299,15 @@ def get_habits_due_today(habits, date):
         is_due = False
 
         # Проверяем частоту привычки
-        if habit.frequency == 'daily':
+        if habit.frequency == "daily":
             is_due = True
-        elif habit.frequency == 'weekdays' and weekday < 5:  # Пн-Пт
+        elif habit.frequency == "weekdays" and weekday < 5:  # Пн-Пт
             is_due = True
-        elif habit.frequency == 'weekends' and weekday >= 5:  # Сб-Вс
+        elif habit.frequency == "weekends" and weekday >= 5:  # Сб-Вс
             is_due = True
-        elif habit.frequency == 'custom' and habit.custom_days:
+        elif habit.frequency == "custom" and habit.custom_days:
             # Предполагается, что custom_days хранит дни недели как строку "0,2,4"
-            custom_days = [int(d) for d in habit.custom_days.split(',')]
+            custom_days = [int(d) for d in habit.custom_days.split(",")]
             is_due = weekday in custom_days
 
         if is_due:
@@ -324,6 +321,7 @@ def get_habit_details(habit_id):
     Получает подробную информацию о привычке по id
     """
     from habits.models import Habit
+
     try:
         return Habit.objects.get(id=habit_id)
     except Habit.DoesNotExist:
@@ -335,6 +333,7 @@ def create_habit(user_id, name, category, frequency, time_value):
     """Создание тестовой привычки"""
     try:
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         from habits.models import Habit
 
@@ -346,12 +345,13 @@ def create_habit(user_id, name, category, frequency, time_value):
             name=name,
             category=category,
             frequency=frequency,
-            time_of_day=time_value  # Используем time_of_day вместо time
+            time_of_day=time_value,  # Используем time_of_day вместо time
         )
 
         return habit
     except Exception as e:
         logger.error(f"Ошибка при создании привычки: {str(e)}")
         import traceback
+
         logger.error(traceback.format_exc())
         return None

@@ -1,6 +1,14 @@
+import asyncio
+from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock
+
 import pytest
 from aiogram import types
 from aiogram.fsm.context import FSMContext
+
+# Правильные импорты
+from telegram_bot.handlers.base import cmd_start, cmd_help, back_button
+from telegram_bot.handlers.habits import process_time, create_habit
 
 
 # Импортируем тестируемые функции
@@ -57,14 +65,14 @@ def state():
         return None
 
     async def set_state(new_state):
-        state_data['state'] = new_state
+        state_data["state"] = new_state
         future = asyncio.Future()
         future.set_result(None)
         return future
 
     async def get_state():
         future = asyncio.Future()
-        future.set_result(state_data.get('state'))
+        future.set_result(state_data.get("state"))
         return future
 
     async def clear():
@@ -86,7 +94,7 @@ def state():
 @pytest.mark.asyncio
 async def test_cmd_start(message):
     """Тест команды /start"""
-    with patch('telegram_bot.handlers.base.get_main_keyboard') as mock_keyboard:
+    with patch("telegram_bot.handlers.base.get_main_keyboard") as mock_keyboard:
         # Настраиваем, чтобы функция работала с await
         mock_keyboard.return_value = "keyboard"
         await cmd_start(message)
@@ -97,7 +105,7 @@ async def test_cmd_start(message):
 @pytest.mark.asyncio
 async def test_cmd_help(message):
     """Тест команды /help"""
-    with patch('telegram_bot.handlers.base.get_main_keyboard') as mock_keyboard:
+    with patch("telegram_bot.handlers.base.get_main_keyboard") as mock_keyboard:
         mock_keyboard.return_value = "keyboard"
         await cmd_help(message)
         message.answer.assert_called_once()
@@ -108,7 +116,7 @@ async def test_cmd_help(message):
 async def test_create_habit():
     """Тест функции создания привычки"""
     # Проверяем сигнатуру функции create_habit
-    with patch('telegram_bot.handlers.habits.Habit') as MockHabit:
+    with patch("telegram_bot.handlers.habits.Habit") as MockHabit:
         mock_instance = MagicMock()
         MockHabit.return_value = mock_instance
         future = asyncio.Future()
@@ -117,37 +125,38 @@ async def test_create_habit():
 
         # Смотрим какие параметры принимает функция
         import inspect
+
         sig = inspect.signature(create_habit)
         params = list(sig.parameters.keys())
 
         # Вызываем функцию с правильными параметрами
-        if 'time' in params:
+        if "time" in params:
             await create_habit(
                 user_id=123456789,
                 name="Пить воду",
                 category="Здоровье",
                 frequency="daily",
-                time="08:00"
+                time="08:00",
             )
-        elif 'reminder_time' in params:
+        elif "reminder_time" in params:
             await create_habit(
                 user_id=123456789,
                 name="Пить воду",
                 category="Здоровье",
                 frequency="daily",
-                reminder_time="08:00"
+                reminder_time="08:00",
             )
         else:
             # Универсальный вариант со словарем
             kwargs = {
-                'user_id': 123456789,
-                'name': "Пить воду",
-                'category': "Здоровье",
-                'frequency': "daily"
+                "user_id": 123456789,
+                "name": "Пить воду",
+                "category": "Здоровье",
+                "frequency": "daily",
             }
             # Добавляем дополнительный параметр, связанный со временем
             for param in params:
-                if 'time' in param:
+                if "time" in param:
                     kwargs[param] = "08:00"
                     break
 
@@ -155,15 +164,6 @@ async def test_create_habit():
 
         MockHabit.assert_called_once()
         assert mock_instance.save.called
-
-
-import asyncio
-import pytest
-from unittest.mock import MagicMock
-
-# Правильные импорты
-from telegram_bot.handlers.base import cmd_start, cmd_help, back_button
-from telegram_bot.handlers.habits import process_time, create_habit
 
 
 # Для тестирования форматтеров добавляем импорт всего модуля
@@ -182,7 +182,7 @@ async def test_process_time(callback_query, state):
     state_data = {
         "habit_name": "Пить воду",
         "category": "Здоровье",
-        "frequency": "daily"
+        "frequency": "daily",
     }
 
     async def get_data_fixed():
@@ -190,11 +190,11 @@ async def test_process_time(callback_query, state):
 
     state.get_data.side_effect = get_data_fixed
 
-    with patch('telegram_bot.handlers.habits.create_habit') as mock_create:
+    with patch("telegram_bot.handlers.habits.create_habit") as mock_create:
         mock_create.return_value = asyncio.Future()
         mock_create.return_value.set_result(None)
 
-        with patch('telegram_bot.handlers.habits.get_main_keyboard') as mock_kb:
+        with patch("telegram_bot.handlers.habits.get_main_keyboard") as mock_kb:
             mock_kb.return_value = "keyboard"
 
             await process_time(callback_query, state)
@@ -212,7 +212,7 @@ async def test_back_button(message, state):
     future.set_result(None)
     state.clear.return_value = future
 
-    with patch('telegram_bot.handlers.base.get_main_keyboard') as mock_kb:
+    with patch("telegram_bot.handlers.base.get_main_keyboard") as mock_kb:
         mock_kb.return_value = "keyboard"
         await back_button(message, state)
 
@@ -235,7 +235,7 @@ async def test_back_to_main(message, state):
     clear_future.set_result(None)
     state.clear.return_value = clear_future
 
-    with patch('telegram_bot.handlers.base.get_main_keyboard') as mock_kb:
+    with patch("telegram_bot.handlers.base.get_main_keyboard") as mock_kb:
         mock_kb.return_value = "keyboard"
         await back_to_main(message, state)
 
@@ -254,7 +254,7 @@ async def test_create_new_habit(message, state):
     set_state_future.set_result(None)
     state.set_state.return_value = set_state_future
 
-    with patch('telegram_bot.handlers.habits.get_back_keyboard') as mock_kb:
+    with patch("telegram_bot.handlers.habits.get_back_keyboard") as mock_kb:
         mock_kb.return_value = "keyboard"
         await create_new_habit(message, state)
 
@@ -270,7 +270,7 @@ async def test_process_habit_name(message, state):
 
     message.text = "Пить воду"
 
-    with patch('telegram_bot.handlers.habits.get_category_keyboard') as mock_kb:
+    with patch("telegram_bot.handlers.habits.get_category_keyboard") as mock_kb:
         mock_kb.return_value = "keyboard"
         await process_habit_name(message, state)
 
@@ -284,7 +284,7 @@ async def test_process_habit_name(message, state):
 async def test_habits_service():
     """Тестируем сервис привычек"""
     # Используем правильный путь до модели Habit
-    with patch('telegram_bot.models.Habit.objects.filter') as mock_filter:
+    with patch("telegram_bot.models.Habit.objects.filter") as mock_filter:
         mock_filter.return_value.values.return_value = [
             {"id": 1, "name": "Тестовая привычка"}
         ]
@@ -298,7 +298,7 @@ async def test_habits_service():
         async def test_habits_service():
             """Тестируем сервис привычек"""
             # Используем правильный путь до модели Habit
-            with patch('telegram_bot.models.Habit.objects.filter') as mock_filter:
+            with patch("telegram_bot.models.Habit.objects.filter") as mock_filter:
                 mock_filter.return_value.values.return_value = [
                     {"id": 1, "name": "Тестовая привычка"}
                 ]
@@ -316,7 +316,7 @@ async def test_habits_service_get_user_habits():
     from telegram_bot.services.habits import get_user_habits
 
     # Исправляем путь импорта — используем правильный путь к модели
-    with patch('telegram_bot.models.Habit.objects.filter') as mock_filter:
+    with patch("telegram_bot.models.Habit.objects.filter") as mock_filter:
         mock_filter.return_value.values.return_value = [
             {"id": 1, "name": "Пить воду", "category": "Здоровье", "frequency": "daily"}
         ]
@@ -326,20 +326,18 @@ async def test_habits_service_get_user_habits():
         assert result[0]["name"] == "Пить воду"
 
 
-import pytest
-from unittest.mock import AsyncMock, patch
-
-
 @pytest.mark.asyncio
 async def test_stats_get_user_statistics():
     """Тест получения статистики пользователя"""
     from telegram_bot.services.statistics import get_user_statistics
 
     # Мокаем все функции, обращающиеся к БД
-    with patch('telegram_bot.services.habits.get_user_habits',
-               new_callable=AsyncMock) as mock_habits, \
-            patch('telegram_bot.services.statistics.get_habit_completion_stats',
-                  new_callable=AsyncMock) as mock_completion_stats:
+    with patch(
+            "telegram_bot.services.habits.get_user_habits", new_callable=AsyncMock
+    ) as mock_habits, patch(
+        "telegram_bot.services.statistics.get_habit_completion_stats",
+        new_callable=AsyncMock,
+    ) as mock_completion_stats:
         mock_habits.return_value = [
             {"id": 1, "name": "Пить воду", "category": "Здоровье"}
         ]
@@ -358,20 +356,22 @@ async def test_formatters():
     import telegram_bot.utils.formatters as formatters
 
     # Создаем тестовые данные для каждой функции
-    function_names = [name for name, _ in inspect.getmembers(formatters, inspect.isfunction)]
+    function_names = [
+        name for name, _ in inspect.getmembers(formatters, inspect.isfunction)
+    ]
 
     # Проверяем каждую функцию в модуле
-    if 'format_datetime' in function_names:
-        assert formatters.format_datetime('2023-01-01T12:00:00') != ''
+    if "format_datetime" in function_names:
+        assert formatters.format_datetime("2023-01-01T12:00:00") != ""
 
-    if 'format_time' in function_names:
-        assert formatters.format_time('12:00') != ''
+    if "format_time" in function_names:
+        assert formatters.format_time("12:00") != ""
 
-    if 'format_duration' in function_names:
-        assert formatters.format_duration(300) != ''
+    if "format_duration" in function_names:
+        assert formatters.format_duration(300) != ""
 
-    if 'format_seconds_to_minutes' in function_names:
-        assert formatters.format_seconds_to_minutes(300) != ''
+    if "format_seconds_to_minutes" in function_names:
+        assert formatters.format_seconds_to_minutes(300) != ""
 
 
 @pytest.mark.asyncio
@@ -380,8 +380,8 @@ async def test_logging_utils():
     from telegram_bot.utils import logging as log_utils
 
     # Патчим встроенный logger
-    with patch('logging.getLogger') as mock_logger:
+    with patch("logging.getLogger") as mock_logger:
         # Вызываем любую доступную функцию из модуля логирования
-        if hasattr(log_utils, 'setup_logging'):
+        if hasattr(log_utils, "setup_logging"):
             log_utils.setup_logging()
             mock_logger.assert_called()

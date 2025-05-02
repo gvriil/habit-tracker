@@ -43,14 +43,14 @@ class UserDataManager:
         if user:
             # Сохраняем в кэш
             user_data = {
-                'id': user.id,
-                'username': user.username,
-                'telegram_id': user.telegram_id,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'telegram_notifications': user.telegram_notifications,
-                'last_active': str(user.last_activity) if user.last_activity else None
+                "id": user.id,
+                "username": user.username,
+                "telegram_id": user.telegram_id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "telegram_notifications": user.telegram_notifications,
+                "last_active": str(user.last_activity) if user.last_activity else None,
             }
             cache.set(cache_key, user_data, CACHE_TIMEOUT)
             return user_data
@@ -60,7 +60,7 @@ class UserDataManager:
     @sync_to_async
     def _load_user_from_db(telegram_id: int) -> Optional[Any]:
         """Загрузка пользователя из базы данных с оптимизацией запроса"""
-        User = apps.get_model('users', 'User')
+        User = apps.get_model("users", "User")
         try:
             return User.objects.filter(telegram_id=telegram_id).first()
         except Exception as e:
@@ -71,25 +71,29 @@ class UserDataManager:
     async def update_activity(telegram_id: int) -> bool:
         """Обновление данных об активности пользователя"""
         try:
-            User = apps.get_model('users', 'User')
+            User = apps.get_model("users", "User")
 
             # Кэшируем активность, чтобы не обновлять БД при каждом запросе
-            activity_key = UserDataManager.get_cache_key(USER_ACTIVITY_PREFIX, telegram_id)
+            activity_key = UserDataManager.get_cache_key(
+                USER_ACTIVITY_PREFIX, telegram_id
+            )
             last_update = cache.get(activity_key)
 
             now = timezone.now()
 
             # Обновляем БД только если прошло больше 5 минут с последнего обновления
             if not last_update or (now - last_update).total_seconds() > 300:
-                await sync_to_async(User.objects.filter(telegram_id=telegram_id).update)(
-                    last_activity=now
-                )
+                await sync_to_async(
+                    User.objects.filter(telegram_id=telegram_id).update
+                )(last_activity=now)
                 cache.set(activity_key, now, CACHE_TIMEOUT)
                 logger.debug(f"Обновлена активность для пользователя {telegram_id}")
 
             return True
         except Exception as e:
-            logger.error(f"Ошибка при обновлении активности пользователя {telegram_id}: {e}")
+            logger.error(
+                f"Ошибка при обновлении активности пользователя {telegram_id}: {e}"
+            )
             return False
 
     @staticmethod
@@ -104,22 +108,27 @@ class UserDataManager:
 
         # Если нет в кэше, загружаем из БД
         try:
-            Habit = apps.get_model('habits', 'Habit')
-            HabitCompletion = apps.get_model('habits', 'HabitCompletion')
-            User = apps.get_model('users', 'User')
+            Habit = apps.get_model("habits", "Habit")
+            HabitCompletion = apps.get_model("habits", "HabitCompletion")
+            User = apps.get_model("users", "User")
 
             # Используем select_related и prefetch_related для оптимизации
-            user = await sync_to_async(User.objects.filter(telegram_id=telegram_id).first)()
+            user = await sync_to_async(
+                User.objects.filter(telegram_id=telegram_id).first
+            )()
             if not user:
                 return []
 
             # Оптимизированный запрос с предзагрузкой связанных данных
             habits = await sync_to_async(
-                lambda: list(Habit.objects.filter(user=user)
-                .prefetch_related(
-                    Prefetch('habitcompletion_set',
-                             queryset=HabitCompletion.objects.order_by('-date'))
-                ))
+                lambda: list(
+                    Habit.objects.filter(user=user).prefetch_related(
+                        Prefetch(
+                            "habitcompletion_set",
+                            queryset=HabitCompletion.objects.order_by("-date"),
+                        )
+                    )
+                )
             )()
 
             # Импортируем внутри функции чтобы избежать циклических импортов
@@ -130,21 +139,25 @@ class UserDataManager:
                 # Получаем серию выполнений
                 streak = await sync_to_async(calculate_streak)(habit)
 
-                result.append({
-                    'id': habit.id,
-                    'name': habit.name,
-                    'category': habit.category,
-                    'time_of_day': habit.time_of_day,
-                    'frequency': habit.frequency,
-                    'streak': streak,
-                })
+                result.append(
+                    {
+                        "id": habit.id,
+                        "name": habit.name,
+                        "category": habit.category,
+                        "time_of_day": habit.time_of_day,
+                        "frequency": habit.frequency,
+                        "streak": streak,
+                    }
+                )
 
             # Сохраняем в кэш на короткое время
             cache.set(habits_key, result, 60 * 5)  # 5 минут
             return result
 
         except Exception as e:
-            logger.error(f"Ошибка при получении привычек пользователя {telegram_id}: {e}")
+            logger.error(
+                f"Ошибка при получении привычек пользователя {telegram_id}: {e}"
+            )
             return []
 
     @staticmethod
@@ -154,7 +167,7 @@ class UserDataManager:
             UserDataManager.get_cache_key(USER_CACHE_PREFIX, telegram_id),
             UserDataManager.get_cache_key(USER_SESSION_PREFIX, telegram_id),
             UserDataManager.get_cache_key(USER_ACTIVITY_PREFIX, telegram_id),
-            f"tg_habits_{telegram_id}"
+            f"tg_habits_{telegram_id}",
         ]
         for key in keys:
             cache.delete(key)
@@ -188,7 +201,7 @@ class SessionManager:
     @sync_to_async
     def cleanup_old_sessions() -> int:
         """Очистка устаревших сессий в БД"""
-        TelegramState = apps.get_model('telegram_bot', 'TelegramState')
+        TelegramState = apps.get_model("telegram_bot", "TelegramState")
         cutoff_date = timezone.now() - timedelta(days=7)
 
         # Находим и удаляем старые записи о состояниях
@@ -202,15 +215,17 @@ class SessionManager:
 
 async def get_active_users(days: int = 7) -> List[Dict]:
     """Получение списка активных пользователей за последние дни"""
-    User = apps.get_model('users', 'User')
+    User = apps.get_model("users", "User")
 
     cutoff_date = timezone.now() - timedelta(days=days)
 
     active_users = await sync_to_async(
-        lambda: list(User.objects.filter(
-            Q(last_activity__gt=cutoff_date) | Q(last_login__gt=cutoff_date),
-            telegram_id__isnull=False
-        ).values('id', 'username', 'telegram_id', 'last_activity', 'last_login'))
+        lambda: list(
+            User.objects.filter(
+                Q(last_activity__gt=cutoff_date) | Q(last_login__gt=cutoff_date),
+                telegram_id__isnull=False,
+            ).values("id", "username", "telegram_id", "last_activity", "last_login")
+        )
     )()
 
     return active_users

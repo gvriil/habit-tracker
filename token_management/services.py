@@ -1,8 +1,9 @@
 # token_management/services.py
+from datetime import datetime
+
 import jwt
 import redis
 from django.conf import settings
-from datetime import datetime, timedelta
 
 
 class TokenService:
@@ -29,7 +30,7 @@ class TokenService:
         key = f"{token_type}_token:{user_id}"
         token = self.redis.get(key)
         if token:
-            return token.decode('utf-8')
+            return token.decode("utf-8")
         return None
 
     def delete_user_tokens(self, user_id):

@@ -1,11 +1,16 @@
-from aiogram import Router, types, F
+from aiogram import Router, F
+from aiogram import types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from asgiref.sync import sync_to_async
 
 from telegram_bot.keyboards.keyboards import (
-    get_main_keyboard, get_category_keyboard,
-    get_frequency_keyboard, get_time_keyboard, get_back_keyboard
+    get_main_keyboard,
+    get_category_keyboard,
+    get_frequency_keyboard,
+    get_time_keyboard,
+    get_back_keyboard,
 )
 
 router = Router()
@@ -26,7 +31,7 @@ async def create_new_habit(message: types.Message, state: FSMContext):
     await message.answer(
         """✏️ Создание новой привычки\n\nВведите название привычки (например, Пить воду, 
         Делать зарядку):""",
-        reply_markup=get_back_keyboard()  # Добавляем кнопку назад
+        reply_markup=get_back_keyboard(),  # Добавляем кнопку назад
     )
 
 
@@ -42,7 +47,7 @@ async def process_habit_name(message: types.Message, state: FSMContext):
     await state.set_state(HabitStates.waiting_for_category)
     await message.answer(
         f"Выберите категорию для привычки «{message.text}»:",
-        reply_markup=get_category_keyboard()
+        reply_markup=get_category_keyboard(),
     )
 
 
@@ -57,7 +62,7 @@ async def back_to_main(message: types.Message, state: FSMContext):
     await message.answer(
         "👋 Добро пожаловать в трекер привычек!\n\n"
         "Я помогу вам создавать и отслеживать ежедневные привычки.",
-        reply_markup=get_main_keyboard()
+        reply_markup=get_main_keyboard(),
     )
 
 
@@ -75,18 +80,17 @@ async def show_habits_list(message: types.Message):
         await message.answer(
             "📋 Список ваших привычек пока пуст.\n\n"
             "Создайте новую привычку с помощью кнопки ➕ Новая привычка.",
-            reply_markup=get_main_keyboard()
+            reply_markup=get_main_keyboard(),
         )
     else:
         # Если есть привычки, выводим список
         habits_text = "📋 Ваши привычки:\n\n"
         for i, habit in enumerate(habits, 1):
-            habits_text += f"{i}. {habit['name']} ({habit.get('category', 'Без категории')})\n"
+            habits_text += (
+                f"{i}. {habit['name']} ({habit.get('category', 'Без категории')})\n"
+            )
 
-        await message.answer(
-            habits_text,
-            reply_markup=get_main_keyboard()
-        )
+        await message.answer(habits_text, reply_markup=get_main_keyboard())
 
 
 async def get_user_habits(user_id):
@@ -95,20 +99,28 @@ async def get_user_habits(user_id):
     @sync_to_async
     def _get_habits():
         import logging
-        logger = logging.getLogger('django')
+
+        logger = logging.getLogger("django")
 
         try:
             from habits.models import Habit
 
             # Запрашиваем привычки из базы с фактическими полями
-            habits = list(Habit.objects.filter(user_id=user_id).values(
-                'id', 'name', 'description', 'periodicity', 'time_to_complete', 'is_active'
-            ))
+            habits = list(
+                Habit.objects.filter(user_id=user_id).values(
+                    "id",
+                    "name",
+                    "description",
+                    "periodicity",
+                    "time_to_complete",
+                    "is_active",
+                )
+            )
 
             # Преобразуем данные в формат, используемый в интерфейсе бота
             for habit in habits:
                 # Преобразование периодичности в текст
-                period = habit.pop('periodicity', 1)
+                period = habit.pop("periodicity", 1)
                 if period == 1:
                     frequency = "Ежедневно"
                 elif period == 5:
@@ -118,16 +130,17 @@ async def get_user_habits(user_id):
                 else:
                     frequency = f"Каждые {period} дней"
 
-                habit['category'] = habit.pop('description', 'Без категории')
-                habit['frequency'] = frequency
-                habit['time_of_day'] = habit.pop('time_to_complete', '12:00')
-                habit['active'] = habit.pop('is_active', True)
+                habit["category"] = habit.pop("description", "Без категории")
+                habit["frequency"] = frequency
+                habit["time_of_day"] = habit.pop("time_to_complete", "12:00")
+                habit["active"] = habit.pop("is_active", True)
 
             logger.error(f"Найдено привычек: {len(habits)} для user_id={user_id}")
             return habits
         except Exception as e:
             logger.error(f"Ошибка при получении привычек: {str(e)}")
             import traceback
+
             logger.error(traceback.format_exc())
             return []
 
@@ -143,15 +156,14 @@ async def process_category(callback: types.CallbackQuery, state: FSMContext):
         "sport": "Спорт",
         "health": "Здоровье",
         "study": "Учёба",
-        "other": "Другое"
+        "other": "Другое",
     }
 
     await state.update_data(category=categories[category_code])
     await state.set_state(HabitStates.waiting_for_frequency)
 
     await callback.message.edit_text(
-        "Выберите частоту напоминаний:",
-        reply_markup=get_frequency_keyboard()
+        "Выберите частоту напоминаний:", reply_markup=get_frequency_keyboard()
     )
 
 
@@ -163,21 +175,18 @@ async def process_frequency(callback: types.CallbackQuery, state: FSMContext):
         "daily": "Ежедневно",
         "weekdays": "По будням (Пн-Пт)",
         "weekends": "По выходным (Сб-Вс)",
-        "custom": "Выбранные дни"
+        "custom": "Выбранные дни",
     }
 
     await state.update_data(frequency=frequencies[frequency])
     await state.set_state(HabitStates.waiting_for_time)
 
     await callback.message.edit_text(
-        "Выберите время для напоминания:",
-        reply_markup=get_time_keyboard()
+        "Выберите время для напоминания:", reply_markup=get_time_keyboard()
     )
 
 
 @router.callback_query(HabitStates.waiting_for_time, F.data.startswith("time_"))
-
-
 async def process_time(callback: types.CallbackQuery, state: FSMContext):
     """Обработка выбора времени"""
     time_code = callback.data.split("_")[1]
@@ -186,7 +195,7 @@ async def process_time(callback: types.CallbackQuery, state: FSMContext):
         "day": "День (13:00)",
         "evening": "Вечер (19:00)",
         "night": "Ночь (22:00)",
-        "custom": "Указанное время"
+        "custom": "Указанное время",
     }
 
     time_values = {
@@ -194,7 +203,7 @@ async def process_time(callback: types.CallbackQuery, state: FSMContext):
         "day": "13:00",
         "evening": "19:00",
         "night": "22:00",
-        "custom": "12:00"  # значение по умолчанию для пользовательского времени
+        "custom": "12:00",  # значение по умолчанию для пользовательского времени
     }
 
     # Получаем выбранное время для отображения
@@ -205,9 +214,9 @@ async def process_time(callback: types.CallbackQuery, state: FSMContext):
 
     # Получаем всю сохраненную информацию о привычке
     data = await state.get_data()
-    habit_name = data.get('habit_name')
-    category = data.get('category')
-    frequency = data.get('frequency')
+    habit_name = data.get("habit_name")
+    category = data.get("category")
+    frequency = data.get("frequency")
 
     # Очищаем состояние
     await state.clear()
@@ -218,7 +227,7 @@ async def process_time(callback: types.CallbackQuery, state: FSMContext):
         name=habit_name,
         category=category,
         frequency=frequency,
-        time_value=time_value  # Передаем корректный формат времени
+        time_value=time_value,  # Передаем корректный формат времени
     )
 
     # Отправляем сообщение о создании привычки
@@ -233,8 +242,7 @@ async def process_time(callback: types.CallbackQuery, state: FSMContext):
 
     # Возвращаем в главное меню
     await callback.message.answer(
-        "Что хотите сделать дальше?",
-        reply_markup=get_main_keyboard()
+        "Что хотите сделать дальше?", reply_markup=get_main_keyboard()
     )
 
 
@@ -244,14 +252,15 @@ async def create_habit(user_id, name, category, frequency, time_value):
     @sync_to_async
     def _create_habit():
         import logging
-        logger = logging.getLogger('django')
+
+        logger = logging.getLogger("django")
 
         try:
             # Импорты внутри функции для работы с Django ORM
             from django.contrib.auth import get_user_model
             from habits.models import Habit
+
             User = get_user_model()
-            from datetime import datetime
 
             # Ищем пользователя
             user = User.objects.get(id=user_id)
@@ -283,7 +292,7 @@ async def create_habit(user_id, name, category, frequency, time_value):
                 estimated_duration=10,  # значение по умолчанию в минутах
                 is_pleasant=False,
                 is_public=False,
-                reward="Личное удовлетворение"  # значение по умолчанию
+                reward="Личное удовлетворение",  # значение по умолчанию
             )
 
             logger.error(f"Привычка создана с ID: {habit.id}")
@@ -291,6 +300,7 @@ async def create_habit(user_id, name, category, frequency, time_value):
         except Exception as e:
             logger.error(f"Ошибка при создании привычки: {str(e)}")
             import traceback
+
             logger.error(traceback.format_exc())
             return None
 
@@ -311,7 +321,7 @@ async def test_create_habit(message: types.Message):
         name="Тестовая привычка",
         category="Тест",
         frequency="Ежедневно",
-        time_value="12:00"
+        time_value="12:00",
     )
 
     await message.answer(f"Результат создания тестовой привычки: {result is not None}")
@@ -324,6 +334,7 @@ async def check_user(message: types.Message):
     @sync_to_async
     def _check_user():
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         user_id = message.from_user.id
         exists = User.objects.filter(id=user_id).exists()
@@ -333,11 +344,6 @@ async def check_user(message: types.Message):
     await message.answer(f"Пользователь {user_id} существует в Django: {exists}")
 
 
-from aiogram import types
-from aiogram.filters import Command
-from asgiref.sync import sync_to_async
-
-
 @router.message(Command("debug_model"))
 async def debug_habit_model(message: types.Message):
     """Показать поля модели Habit"""
@@ -345,8 +351,11 @@ async def debug_habit_model(message: types.Message):
     @sync_to_async
     def _get_model_info():
         from habits.models import Habit
-        fields = [f"{field.name} ({field.__class__.__name__})" for field in
-                  Habit._meta.get_fields()]
+
+        fields = [
+            f"{field.name} ({field.__class__.__name__})"
+            for field in Habit._meta.get_fields()
+        ]
         return fields
 
     fields = await _get_model_info()
