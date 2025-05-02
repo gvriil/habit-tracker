@@ -1,0 +1,11 @@
+aiogram
+Django==4.2
+django-filter
+djoser
+drf_yasg
+PyJWT
+pytest
+python-dotenv
+python-telegram-bot
+redis
+requests

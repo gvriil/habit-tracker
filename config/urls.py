@@ -16,15 +16,21 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+
+def health_check(request):
+    return HttpResponse("OK")
+
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Habits API",
-        default_version='v1',
+        default_version="v1",
         description="API для трекера полезных привычек",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@habits.local"),
@@ -35,15 +41,25 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/auth/', include('djoser.urls')),
-    path('api/auth/', include('djoser.urls.jwt')),
-    path('api/telegram/', include('telegram_bot.urls')),
-    path('api/', include('habits.urls')),
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0),
-            name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0),
-            name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-
+    path("admin/", admin.site.urls),
+    path("", include("telegram_bot.urls")),  # Подключаем урлы приложения telegram_bot
+    path("api/auth/", include("djoser.urls")),
+    path("health/", health_check, name="health"),
+    path("api/auth/", include("djoser.urls.jwt")),
+    path("api/telegram/", include("telegram_bot.urls")),
+    path("api/", include("habits.urls")),
+    path("", include("telegram_bot.urls")),
+    re_path(
+        r"^swagger(?P<format>\.json|\.yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    re_path(
+        r"^swagger/$",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    re_path(
+        r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"
+    ),
 ]

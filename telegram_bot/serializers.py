@@ -7,15 +7,24 @@ class TelegramStateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TelegramState
-        fields = ['id', 'user', 'telegram_id', 'state', 'context', 'updated_at']
-        read_only_fields = ['updated_at']
+        fields = ["id", "user", "telegram_id", "state", "context", "updated_at"]
+        read_only_fields = ["updated_at"]
 
 
 class NotificationLogSerializer(serializers.ModelSerializer):
     """Сериализатор для логов уведомлений."""
-    habit_name = serializers.CharField(source='habit.name', read_only=True)
+
+    habit_name = serializers.CharField(source="habit.name", read_only=True)
 
     class Meta:
         model = NotificationLog
-        fields = ['id', 'user', 'habit', 'habit_name', 'sent_at', 'message', 'is_delivered']
-        read_only_fields = ['sent_at']
+        fields = [
+            "id",
+            "user",
+            "habit",
+            "habit_name",
+            "sent_at",
+            "message",
+            "is_delivered",
+        ]
+        read_only_fields = ["sent_at"]

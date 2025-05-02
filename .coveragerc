@@ -1,0 +1,20 @@
+[run]
+    source = telegram_bot
+    omit =
+        */migrations/*
+        */management/commands/*
+        */tests.py
+        telegram_bot/views.py
+        telegram_bot/urls.py
+        telegram_bot/bot.py
+        telegram_bot/user_data.py
+        telegram_bot/serializers.py
+
+    [report]
+    exclude_lines =
+        pragma: no cover
+        def __repr__
+        raise NotImplementedError
+        if __name__ == .__main__.:
+        pass
+        raise ImportError

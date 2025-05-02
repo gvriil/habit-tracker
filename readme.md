@@ -68,7 +68,7 @@ DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=5432
 
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_TOKEN=your_TELEGRAM_TOKEN
 ```
 
 ### 5. Применение миграций
@@ -155,7 +155,7 @@ celery -A config beat -l info
 
 ### Предварительная настройка
 1. Создайте бота в Telegram через [@BotFather](https://t.me/BotFather)
-2. Получите токен и добавьте его в файл `.env` в параметре `TELEGRAM_BOT_TOKEN`
+2. Получите токен и добавьте его в файл `.env` в параметре `TELEGRAM_TOKEN`
 
 ### Запуск сервисов
 Для корректной работы бота необходимо запустить следующие компоненты:

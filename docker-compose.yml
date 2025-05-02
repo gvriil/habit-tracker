@@ -1,0 +1,109 @@
+version: '3'
+
+services:
+  web:
+    environment:
+      - DOCKER_ENV=1
+      - DB_HOST=db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - gunicorn_logs:/var/log/gunicorn
+
+    command: >
+      bash -c "mkdir -p /var/log/gunicorn &&
+               python manage.py migrate &&
+               python manage.py collectstatic --noinput &&
+               /usr/local/bin/gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+    restart: always
+
+  nginx:
+    image: nginx:1.21
+    volumes:
+      - .:/app
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/home/app/static
+      - media_volume:/home/app/media
+    read_only: false
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - app-network
+    restart: always
+
+  db:
+    image: postgres:13
+    networks:
+      - app-network
+    restart: always
+    volumes:
+      - .:/app
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: habit_tracker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    networks:
+      - app-network
+    restart: always
+
+  celery:
+    build: .
+    volumes:
+      - .:/app
+    restart: always
+    networks:
+      - app-network
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+  celery-beat:
+    build: .
+    volumes:
+      - .:/app
+    restart: always
+    networks:
+      - app-network
+    command: celery -A config beat -l info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+networks:
+  app-network:
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  logs_volume:
+  gunicorn_logs:

@@ -1,63 +1,104 @@
-"""
-Модуль для хранения данных пользователей Telegram бота
-"""
+from typing import Dict, Any
+import threading
+import time
 
-# Хранилище данных пользователей
-user_data = {}
 
-# Экспортируем словарные операции на уровень модуля
-def __iter__():
-    return iter(user_data)
+class UserDataStorage:
+    def __init__(self):
+        self._data: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
+        self._expiry_time = 3600  # 1 час
 
-def __getitem__(key):
-    return user_data[key]
+    def __getitem__(self, key):
+        with self._lock:
+            if key in self._data:
+                return self._data[key]
+            self._data[key] = {}
+            return self._data[key]
 
-def __setitem__(key, value):
-    user_data[key] = value
+    def __setitem__(self, key, value):
+        with self._lock:
+            self._data[key] = value
 
-def __delitem__(key):
-    del user_data[key]
+    def __contains__(self, key):
+        with self._lock:
+            return key in self._data
 
-def __contains__(item):
-    return item in user_data
+    def get(self, key, default=None):
+        with self._lock:
+            return self._data.get(key, default)
+
+    def clear_expired(self):
+        """Очищает устаревшие данные"""
+        with self._lock:
+            current_time = time.time()
+            expired_keys = []
+
+            for key, value in self._data.items():
+                if "last_activity" in value:
+                    if current_time - value["last_activity"] > self._expiry_time:
+                        expired_keys.append(key)
+
+            for key in expired_keys:
+                del self._data[key]
+
+    def clear(self):
+        with self._lock:
+            self._data.clear()
+
+    def update_activity(self, user_id):
+        """Обновляет время последней активности пользователя"""
+        with self._lock:
+            if user_id in self._data:
+                self._data[user_id]["last_activity"] = time.time()
+
+
+# Создаем экземпляр для использования во всем приложении
+# user_data = UserDataStorage()
+# telegram_bot/user_data.py
+user_data = {}  # Словарь для хранения данных пользователей
+
+
+def get(chat_id, default=None):
+    return user_data.get(chat_id, default)
+
+
+def set(chat_id, data):
+    user_data[chat_id] = data
+
 
 def items():
     return user_data.items()
 
-def keys():
-    return user_data.keys()
 
-def values():
-    return user_data.values()
-
-def get(key, default=None):
-    return user_data.get(key, default)
-
-def clear():
-    user_data.clear()
-
-def update(*args, **kwargs):
-    user_data.update(*args, **kwargs)
-
-def copy():
-    return user_data.copy()
-
-# Вспомогательные функции
+# Функции-обертки для совместимости
 def get_user_data(user_id):
-    """Получение данных пользователя. Если данных нет, создается пустой словарь."""
-    if user_id not in user_data:
-        user_data[user_id] = {}
     return user_data[user_id]
 
-def set_user_data(user_id, key, value):
-    """Установка данных пользователя."""
-    if user_id not in user_data:
-        user_data[user_id] = {}
-    user_data[user_id][key] = value
-    return True
 
-def clear_user_data(user_id):
-    """Очистка данных пользователя."""
-    if user_id in user_data:
-        user_data.pop(user_id)
-    return True
+def clear_user_data(user_id=None):
+    if user_id is None:
+        user_data.clear()
+    else:
+        user_data[user_id] = {}
+
+
+def update_user_activity(user_id):
+    user_data.update_activity(user_id)
+
+
+def get_telegram_chat_id_by_user_id(user_id):
+    """Получение chat_id пользователя Telegram по ID пользователя Django."""
+    # Сначала пробуем найти в базе данных (основной источник)
+    from users.models import User
+
+    user = User.objects.filter(id=user_id).first()
+    if user and user.telegram_id:
+        return user.telegram_id
+
+    # Как запасной вариант ищем в кеше сессий
+    for chat_id, data in user_data.items():
+        if data.get("user_id") == user_id:
+            return chat_id
+
+    return None
